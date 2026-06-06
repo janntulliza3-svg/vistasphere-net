@@ -15,9 +15,19 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as AdminVideosRouteImport } from './routes/admin.videos'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminMenuRouteImport } from './routes/admin.menu'
+import { Route as AdminFakeRouteImport } from './routes/admin.fake'
+import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as AdminAdsRouteImport } from './routes/admin.ads'
 
 const WatchLaterRoute = WatchLaterRouteImport.update({
   id: '/watch-later',
@@ -49,10 +59,20 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const VideoIdRoute = VideoIdRouteImport.update({
   id: '/video/$id',
@@ -64,17 +84,67 @@ const CategorySlugRoute = CategorySlugRouteImport.update({
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminVideosRoute = AdminVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMenuRoute = AdminMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFakeRoute = AdminFakeRouteImport.update({
+  id: '/fake',
+  path: '/fake',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCommentsRoute = AdminCommentsRouteImport.update({
+  id: '/comments',
+  path: '/comments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdsRoute = AdminAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
+  '/admin/ads': typeof AdminAdsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/comments': typeof AdminCommentsRoute
+  '/admin/fake': typeof AdminFakeRoute
+  '/admin/menu': typeof AdminMenuRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,33 +154,62 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
+  '/admin/ads': typeof AdminAdsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/comments': typeof AdminCommentsRoute
+  '/admin/fake': typeof AdminFakeRoute
+  '/admin/menu': typeof AdminMenuRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
+  '/admin/ads': typeof AdminAdsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/comments': typeof AdminCommentsRoute
+  '/admin/fake': typeof AdminFakeRoute
+  '/admin/menu': typeof AdminMenuRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/categories'
     | '/history'
     | '/search'
     | '/trending'
     | '/watch-later'
+    | '/admin/ads'
+    | '/admin/analytics'
+    | '/admin/categories'
+    | '/admin/comments'
+    | '/admin/fake'
+    | '/admin/menu'
+    | '/admin/settings'
+    | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,23 +219,43 @@ export interface FileRouteTypes {
     | '/search'
     | '/trending'
     | '/watch-later'
+    | '/admin/ads'
+    | '/admin/analytics'
+    | '/admin/categories'
+    | '/admin/comments'
+    | '/admin/fake'
+    | '/admin/menu'
+    | '/admin/settings'
+    | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
+    | '/admin'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/categories'
     | '/history'
     | '/search'
     | '/trending'
     | '/watch-later'
+    | '/admin/ads'
+    | '/admin/analytics'
+    | '/admin/categories'
+    | '/admin/comments'
+    | '/admin/fake'
+    | '/admin/menu'
+    | '/admin/settings'
+    | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   CategoriesRoute: typeof CategoriesRoute
   HistoryRoute: typeof HistoryRoute
@@ -191,12 +310,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/video/$id': {
       id: '/video/$id'
@@ -212,11 +345,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/videos': {
+      id: '/admin/videos'
+      path: '/videos'
+      fullPath: '/admin/videos'
+      preLoaderRoute: typeof AdminVideosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/menu': {
+      id: '/admin/menu'
+      path: '/menu'
+      fullPath: '/admin/menu'
+      preLoaderRoute: typeof AdminMenuRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/fake': {
+      id: '/admin/fake'
+      path: '/fake'
+      fullPath: '/admin/fake'
+      preLoaderRoute: typeof AdminFakeRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/comments': {
+      id: '/admin/comments'
+      path: '/comments'
+      fullPath: '/admin/comments'
+      preLoaderRoute: typeof AdminCommentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ads': {
+      id: '/admin/ads'
+      path: '/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof AdminAdsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminAdsRoute: typeof AdminAdsRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminCommentsRoute: typeof AdminCommentsRoute
+  AdminFakeRoute: typeof AdminFakeRoute
+  AdminMenuRoute: typeof AdminMenuRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminVideosRoute: typeof AdminVideosRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdsRoute: AdminAdsRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminCommentsRoute: AdminCommentsRoute,
+  AdminFakeRoute: AdminFakeRoute,
+  AdminMenuRoute: AdminMenuRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminVideosRoute: AdminVideosRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   CategoriesRoute: CategoriesRoute,
   HistoryRoute: HistoryRoute,
