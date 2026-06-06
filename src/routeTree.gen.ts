@@ -16,6 +16,7 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 
 const WatchLaterRoute = WatchLaterRouteImport.update({
@@ -53,6 +54,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VideoIdRoute = VideoIdRouteImport.update({
+  id: '/video/$id',
+  path: '/video/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/video/$id': typeof VideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/video/$id': typeof VideoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/video/$id': typeof VideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/trending'
     | '/watch-later'
     | '/category/$slug'
+    | '/video/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/trending'
     | '/watch-later'
     | '/category/$slug'
+    | '/video/$id'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/trending'
     | '/watch-later'
     | '/category/$slug'
+    | '/video/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   TrendingRoute: typeof TrendingRoute
   WatchLaterRoute: typeof WatchLaterRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  VideoIdRoute: typeof VideoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/video/$id': {
+      id: '/video/$id'
+      path: '/video/$id'
+      fullPath: '/video/$id'
+      preLoaderRoute: typeof VideoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   TrendingRoute: TrendingRoute,
   WatchLaterRoute: WatchLaterRoute,
   CategorySlugRoute: CategorySlugRoute,
+  VideoIdRoute: VideoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
