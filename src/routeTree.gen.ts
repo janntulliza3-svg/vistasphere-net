@@ -21,6 +21,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as AdminVideosRouteImport } from './routes/admin.videos'
+import { Route as AdminSocialRouteImport } from './routes/admin.social'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminFakeRouteImport } from './routes/admin.fake'
@@ -89,6 +90,11 @@ const AdminVideosRoute = AdminVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSocialRoute = AdminSocialRouteImport.update({
+  id: '/social',
+  path: '/social',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/admin/fake': typeof AdminFakeRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/social': typeof AdminSocialRoute
   '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByTo {
   '/admin/fake': typeof AdminFakeRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/social': typeof AdminSocialRoute
   '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
@@ -183,6 +191,7 @@ export interface FileRoutesById {
   '/admin/fake': typeof AdminFakeRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/social': typeof AdminSocialRoute
   '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/admin/fake'
     | '/admin/menu'
     | '/admin/settings'
+    | '/admin/social'
     | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/admin/fake'
     | '/admin/menu'
     | '/admin/settings'
+    | '/admin/social'
     | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/admin/fake'
     | '/admin/menu'
     | '/admin/settings'
+    | '/admin/social'
     | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
@@ -352,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVideosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/social': {
+      id: '/admin/social'
+      path: '/social'
+      fullPath: '/admin/social'
+      preLoaderRoute: typeof AdminSocialRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -412,6 +431,7 @@ interface AdminRouteChildren {
   AdminFakeRoute: typeof AdminFakeRoute
   AdminMenuRoute: typeof AdminMenuRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSocialRoute: typeof AdminSocialRoute
   AdminVideosRoute: typeof AdminVideosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -424,6 +444,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminFakeRoute: AdminFakeRoute,
   AdminMenuRoute: AdminMenuRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminSocialRoute: AdminSocialRoute,
   AdminVideosRoute: AdminVideosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
