@@ -9,38 +9,43 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+    let mounted = true;
+
+    const checkAdminRole = async (activeUser: User | null) => {
+      if (!activeUser) {
+        if (mounted) setIsAdmin(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", activeUser.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (mounted) setIsAdmin(!!data);
+    };
+
+    const syncSession = async (sess: Session | null) => {
+      if (!mounted) return;
+      setLoading(true);
       setSession(sess);
       setUser(sess?.user ?? null);
-      if (sess?.user) {
-        setTimeout(async () => {
-          const { data } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", sess.user.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          setIsAdmin(!!data);
-        }, 0);
-      } else {
-        setIsAdmin(false);
-      }
+      await checkAdminRole(sess?.user ?? null);
+      if (mounted) setLoading(false);
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+      void syncSession(sess);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      if (data.session?.user) {
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.session.user.id)
-          .eq("role", "admin")
-          .maybeSingle()
-          .then(({ data: r }) => setIsAdmin(!!r));
-      }
-      setLoading(false);
-    });
-    return () => sub.subscription.unsubscribe();
+
+    supabase.auth.getSession().then(({ data }) => void syncSession(data.session));
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   return { user, session, isAdmin, loading };
