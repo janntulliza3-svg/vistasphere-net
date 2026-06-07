@@ -45,7 +45,7 @@ function AdminLayout() {
         </div>
         <nav className="flex-1 p-2 space-y-1">
           {nav.map(n => {
-            const active = n.exact ? path === n.to : path.startsWith(n.to);
+            const active = "exact" in n && n.exact ? path === n.to : path.startsWith(n.to);
             const Icon = n.icon;
             return (
               <Link key={n.to} to={n.to as any} className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ${active?"bg-sidebar-accent text-primary border-l-2 border-primary":"text-sidebar-foreground/80 hover:bg-sidebar-accent"}`}>
