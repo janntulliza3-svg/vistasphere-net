@@ -1,7 +1,26 @@
 import { Link } from "@tanstack/react-router";
-import { PlayCircle, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { useEffect, useState } from "react";
+import { PlayCircle, Link as LinkIcon } from "lucide-react";
+import * as Icons from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+type SocialLink = { id: string; platform: string; url: string; icon: string };
+
+function renderIcon(name: string) {
+  const Icon = (Icons as any)[name] ?? LinkIcon;
+  return <Icon className="h-5 w-5" />;
+}
 
 export function SiteFooter() {
+  const [socials, setSocials] = useState<SocialLink[]>([]);
+  useEffect(() => {
+    supabase
+      .from("social_links")
+      .select("id,platform,url,icon")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setSocials((data as SocialLink[]) ?? []));
+  }, []);
   return (
     <footer className="border-t border-border mt-16 bg-card/30">
       <div className="container mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
@@ -29,11 +48,21 @@ export function SiteFooter() {
         </div>
         <div>
           <h4 className="text-sm font-semibold mb-3">Follow</h4>
-          <div className="flex gap-3 text-muted-foreground">
-            <a href="#" className="hover:text-foreground"><Facebook className="h-5 w-5" /></a>
-            <a href="#" className="hover:text-foreground"><Twitter className="h-5 w-5" /></a>
-            <a href="#" className="hover:text-foreground"><Instagram className="h-5 w-5" /></a>
-            <a href="#" className="hover:text-foreground"><Youtube className="h-5 w-5" /></a>
+          <div className="flex flex-wrap gap-3 text-muted-foreground">
+            {socials.length === 0 ? (
+              <span className="text-xs">No links yet</span>
+            ) : socials.map(s => (
+              <a
+                key={s.id}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={s.platform}
+                className="hover:text-foreground transition"
+              >
+                {renderIcon(s.icon)}
+              </a>
+            ))}
           </div>
         </div>
       </div>
