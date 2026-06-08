@@ -1,29 +1,31 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
-import { supabase } from "@/integrations/supabase/client";
 import { Maintenance } from "./Maintenance";
+import { useAuth } from "@/hooks/useAuth";
+import { useSiteSettings, loadSiteSettings } from "@/hooks/useSiteSettings";
 
-export function SiteLayout({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<{ live: boolean; title: string; message: string } | null>(null);
+export function SiteLayout({ children, requireAuth = false }: { children: ReactNode; requireAuth?: boolean }) {
+  const settings = useSiteSettings();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const path = useRouterState({ select: s => s.location.pathname });
+
+  useEffect(() => { if (!settings) loadSiteSettings(); }, [settings]);
 
   useEffect(() => {
-    supabase
-      .from("settings")
-      .select("site_status,maintenance_title,maintenance_message")
-      .eq("id", 1)
-      .maybeSingle()
-      .then(({ data }) => {
-        setStatus({
-          live: data?.site_status ?? true,
-          title: data?.maintenance_title ?? "We will be back soon",
-          message: data?.maintenance_message ?? "",
-        });
-      });
-  }, []);
+    if (!requireAuth) return;
+    if (loading) return;
+    if (!user) navigate({ to: "/auth", search: { redirect: path } as any });
+  }, [requireAuth, loading, user, navigate, path]);
 
-  if (status && !status.live) {
-    return <Maintenance title={status.title} message={status.message} />;
+  if (settings && !settings.site_status) {
+    return <Maintenance title={settings.maintenance_title} message={settings.maintenance_message} />;
+  }
+
+  if (requireAuth && (loading || !user)) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
   return (
