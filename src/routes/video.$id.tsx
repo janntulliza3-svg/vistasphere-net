@@ -10,6 +10,8 @@ import { formatViews, timeAgo, containsLink } from "@/lib/format";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useServerFn } from "@tanstack/react-start";
+import { incrementVideoView } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/video/$id")({
   head: ({ params }) => ({
@@ -41,19 +43,21 @@ function VideoPage() {
   const [video, setVideo] = useState<any>(null);
   const [related, setRelated] = useState<VideoCardData[]>([]);
   const [comments, setComments] = useState<any[]>([]);
+  const [fake, setFake] = useState<any>(null);
   const [showPlayer, setShowPlayer] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentName, setCommentName] = useState("");
   const [commentRating, setCommentRating] = useState(5);
   const [reportReason, setReportReason] = useState("Broken Video");
+  const incView = useServerFn(incrementVideoView);
 
   useEffect(() => {
     (async () => {
       const { data: v } = await supabase.from("videos").select("*").eq("id", id).maybeSingle();
       setVideo(v);
       if (v) {
-        supabase.rpc("increment_video_views", { _video_id: id });
+        incView({ data: { videoId: id } }).catch(() => {});
         const hist: string[] = JSON.parse(localStorage.getItem("history") ?? "[]");
         localStorage.setItem("history", JSON.stringify([id, ...hist.filter(x=>x!==id)].slice(0,50)));
         if (v.category_id) {
@@ -63,6 +67,8 @@ function VideoPage() {
       }
       const { data: c } = await supabase.from("comments").select("*").eq("video_id", id).eq("status","approved").order("created_at",{ascending:false}).limit(20);
       setComments(c ?? []);
+      const { data: f } = await (supabase as any).from("fake_settings").select("*").eq("id",1).maybeSingle();
+      setFake(f);
     })();
   }, [id]);
 
@@ -111,6 +117,35 @@ function VideoPage() {
 
   if (!video) return <SiteLayout requireAuth><div className="container mx-auto px-4 py-12 text-muted-foreground">Loading...</div></SiteLayout>;
 
+  // Apply fake likes
+  let displayLikes = video.likes ?? 0;
+  if (fake?.enable_fake_likes) {
+    const mult = fake.like_multiplier || 1;
+    const variation = fake.random_variation ? (0.9 + ((parseInt(id.replace(/-/g,"").slice(0,8),16) % 200) / 1000)) : 1;
+    displayLikes = Math.max(displayLikes, Math.floor((displayLikes || 1) * mult * variation));
+  }
+
+  // Generate fake comments mixed with real
+  let displayComments = comments;
+  if (fake?.enable_fake_comments) {
+    const templates: string[] = (fake.templates || "").split("\n").map((s: string) => s.trim()).filter(Boolean);
+    const names = ["Rakib","Sumaiya","Tanvir","Nadia","Hasan","Mim","Arif","Sadia","Imran","Farhana"];
+    const seedNum = parseInt(id.replace(/-/g,"").slice(0,8), 16);
+    const count = fake.fake_comments_per_video || 0;
+    const fakeOnes = Array.from({ length: count }).map((_, i) => {
+      const seed = seedNum + i * 137;
+      const t = templates[seed % Math.max(templates.length,1)] || "Nice video!";
+      const n = fake.random_usernames ? names[seed % names.length] : "Guest";
+      const ago = fake.random_timestamps ? new Date(Date.now() - ((seed % 72) + 1) * 3600 * 1000).toISOString() : new Date().toISOString();
+      const rating = fake.auto_star_rating ? (4 + (seed % 2)) : 5;
+      return { id: `fake-${id}-${i}`, username: n, comment: t, rating, created_at: ago, has_link: false, _fake: true };
+    });
+    const mix = fake.mix_ratio ?? 70;
+    const totalReal = comments.length;
+    const keepReal = Math.max(0, Math.floor(totalReal * (100 - mix) / 100));
+    displayComments = [...fakeOnes, ...comments.slice(0, keepReal || comments.length)];
+  }
+
   return (
     <SiteLayout requireAuth>
       <div className="container mx-auto px-4 py-6">
@@ -148,7 +183,7 @@ function VideoPage() {
             </div>
 
             <div className="flex items-center gap-2 mt-4 flex-wrap">
-              <Button variant="outline" size="sm"><ThumbsUp className="h-4 w-4 mr-2" />{video.likes ?? 0}</Button>
+              <Button variant="outline" size="sm"><ThumbsUp className="h-4 w-4 mr-2" />{displayLikes}</Button>
               <Button variant="outline" size="sm"><ThumbsDown className="h-4 w-4 mr-2" />{video.dislikes ?? 0}</Button>
 
               <Dialog>
@@ -193,7 +228,7 @@ function VideoPage() {
 
             {/* Comments */}
             <section className="mt-8">
-              <h2 className="text-lg font-bold mb-4">Comments ({comments.length})</h2>
+              <h2 className="text-lg font-bold mb-4">Comments ({displayComments.length})</h2>
               <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3">
                 <input value={commentName} onChange={e=>setCommentName(e.target.value)} placeholder="Your name" className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm" />
                 <Textarea value={commentText} onChange={e=>setCommentText(e.target.value)} placeholder="Write a comment..." />
@@ -203,7 +238,7 @@ function VideoPage() {
                 </div>
               </div>
               <div className="space-y-4">
-                {comments.map(c => (
+                {displayComments.map(c => (
                   <div key={c.id} className={`flex gap-3 ${c.has_link?"opacity-70":""}`}>
                     <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-semibold shrink-0">
                       {c.username.slice(0,2).toUpperCase()}
