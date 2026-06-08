@@ -1,11 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { Play, ChevronRight } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState, useCallback } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { Play, ChevronRight, ChevronLeft } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { VideoCard, type VideoCardData } from "@/components/site/VideoCard";
 import { supabase } from "@/integrations/supabase/client";
-import { formatViews } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,20 +19,33 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [featured, setFeatured] = useState<any>(null);
+  const [slides, setSlides] = useState<any[]>([]);
   const [trending, setTrending] = useState<VideoCardData[]>([]);
   const [latest, setLatest] = useState<VideoCardData[]>([]);
   const [cats, setCats] = useState<{ id: string; name: string; slug: string; image_url: string | null }[]>([]);
+  const [emblaRef, embla] = useEmblaCarousel({ loop: true });
+  const [selected, setSelected] = useState(0);
+  const scrollTo = useCallback((i: number) => embla?.scrollTo(i), [embla]);
+
+  useEffect(() => {
+    if (!embla) return;
+    const onSel = () => setSelected(embla.selectedScrollSnap());
+    embla.on("select", onSel); onSel();
+    const t = setInterval(() => embla.scrollNext(), 6000);
+    return () => { embla.off("select", onSel); clearInterval(t); };
+  }, [embla]);
 
   useEffect(() => {
     (async () => {
-      const [{ data: feat }, { data: trend }, { data: lat }, { data: c }] = await Promise.all([
-        supabase.from("videos").select("*").eq("status", "active").order("is_featured", { ascending: false }).order("views", { ascending: false }).limit(1).maybeSingle(),
+      const [{ data: slidesData }, { data: feats }, { data: trend }, { data: lat }, { data: c }] = await Promise.all([
+        (supabase as any).from("hero_slides").select("*").eq("is_active", true).order("sort_order"),
+        supabase.from("videos").select("id,title,thumbnail_url,views").eq("status","active").order("is_featured",{ascending:false}).order("views",{ascending:false}).limit(5),
         supabase.from("videos").select("id,title,thumbnail_url,views,duration,created_at").eq("status", "active").order("views", { ascending: false }).limit(10),
         supabase.from("videos").select("id,title,thumbnail_url,views,duration,created_at").eq("status", "active").order("created_at", { ascending: false }).limit(12),
         supabase.from("categories").select("id,name,slug,image_url").order("sort_order").limit(8),
       ]);
-      setFeatured(feat);
+      const s = (slidesData && slidesData.length) ? slidesData : (feats ?? []).map((v: any) => ({ id: v.id, title: v.title, subtitle: `${v.views ?? 0} views`, image_url: v.thumbnail_url, link_url: `/video/${v.id}` }));
+      setSlides(s);
       setTrending(trend ?? []);
       setLatest(lat ?? []);
       setCats(c ?? []);
@@ -42,23 +54,44 @@ function Index() {
 
   return (
     <SiteLayout>
-      {/* Hero */}
-      {featured ? (
+      {/* Hero slider */}
+      {slides.length > 0 ? (
         <section className="container mx-auto px-4 pt-6">
-          <Link to="/video/$id" params={{ id: featured.id }} className="group relative block rounded-2xl overflow-hidden border border-border">
-            <div className="relative aspect-[21/9] bg-muted">
-              <img src={featured.thumbnail_url} alt={featured.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-20 w-20 rounded-full bg-primary/90 flex items-center justify-center shadow-glow animate-pulse-play">
-                  <Play className="h-10 w-10 text-primary-foreground fill-current" />
-                </div>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 p-6 gradient-fade-b">
-                <h1 className="text-2xl md:text-4xl font-bold mb-2">{featured.title}</h1>
-                <p className="text-sm text-muted-foreground">{formatViews(featured.views)} views</p>
+          <div className="relative rounded-2xl overflow-hidden border border-border group">
+            <div className="overflow-hidden" ref={emblaRef}>
+              <div className="flex">
+                {slides.map((s, i) => {
+                  const inner = (
+                    <div className="relative aspect-[21/9] bg-muted">
+                      <img src={s.image_url} alt={s.title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-16 w-16 rounded-full bg-primary/90 flex items-center justify-center shadow-glow">
+                          <Play className="h-8 w-8 text-primary-foreground fill-current" />
+                        </div>
+                      </div>
+                      <div className="absolute inset-x-0 bottom-0 p-6">
+                        <h2 className="text-xl md:text-3xl font-bold">{s.title}</h2>
+                        {s.subtitle && <p className="text-sm text-muted-foreground mt-1">{s.subtitle}</p>}
+                      </div>
+                    </div>
+                  );
+                  return (
+                    <div key={s.id ?? i} className="min-w-0 flex-[0_0_100%]">
+                      {s.link_url ? <a href={s.link_url}>{inner}</a> : inner}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </Link>
+            <button onClick={() => embla?.scrollPrev()} className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition" aria-label="Previous"><ChevronLeft className="h-5 w-5" /></button>
+            <button onClick={() => embla?.scrollNext()} className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition" aria-label="Next"><ChevronRight className="h-5 w-5" /></button>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {slides.map((_, i) => (
+                <button key={i} onClick={() => scrollTo(i)} className={`h-2 rounded-full transition-all ${i===selected?"w-6 bg-primary":"w-2 bg-white/40"}`} aria-label={`Go to slide ${i+1}`} />
+              ))}
+            </div>
+          </div>
         </section>
       ) : (
         <section className="container mx-auto px-4 pt-6">
