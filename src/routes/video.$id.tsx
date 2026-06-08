@@ -109,10 +109,10 @@ function VideoPage() {
     toast.success("Report submitted");
   };
 
-  if (!video) return <SiteLayout><div className="container mx-auto px-4 py-12 text-muted-foreground">Loading...</div></SiteLayout>;
+  if (!video) return <SiteLayout requireAuth><div className="container mx-auto px-4 py-12 text-muted-foreground">Loading...</div></SiteLayout>;
 
   return (
-    <SiteLayout>
+    <SiteLayout requireAuth>
       <div className="container mx-auto px-4 py-6">
         <nav className="text-xs text-muted-foreground mb-4">
           <Link to="/" className="hover:text-foreground">Home</Link> &gt;{" "}

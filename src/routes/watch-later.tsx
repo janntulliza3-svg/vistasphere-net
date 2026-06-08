@@ -24,7 +24,7 @@ function WatchLater() {
     refresh();
   };
   return (
-    <SiteLayout>
+    <SiteLayout requireAuth>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Watch Later <span className="text-sm bg-card border border-border px-2 py-0.5 rounded-full text-muted-foreground align-middle">{videos.length}</span></h1>
         {videos.length === 0 ? (

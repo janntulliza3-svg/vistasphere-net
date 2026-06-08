@@ -37,7 +37,7 @@ function TrendingPage() {
   ];
 
   return (
-    <SiteLayout>
+    <SiteLayout requireAuth>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Trending Now</h1>
         <div className="flex gap-2 mb-6 flex-wrap">
