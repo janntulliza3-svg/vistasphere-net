@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { useSiteSettings, loadSiteSettings } from "@/hooks/useSiteSettings";
 
 function NotFoundComponent() {
   return (
@@ -123,6 +124,19 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const settings = useSiteSettings();
+  useEffect(() => { loadSiteSettings(); }, []);
+  useEffect(() => {
+    if (!settings) return;
+    if (typeof document !== "undefined") {
+      document.title = settings.site_title;
+      if (settings.favicon_url) {
+        let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+        if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
+        link.href = settings.favicon_url;
+      }
+    }
+  }, [settings]);
 
   return (
     <QueryClientProvider client={queryClient}>

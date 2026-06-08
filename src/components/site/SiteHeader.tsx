@@ -1,14 +1,26 @@
-import { Link } from "@tanstack/react-router";
-import { Bell, Search, User as UserIcon, PlayCircle, Menu as MenuIcon } from "lucide-react";
-import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Bell, Search, User as UserIcon, PlayCircle, Menu as MenuIcon, Crown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/hooks/useAuth";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 export function SiteHeader() {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const settings = useSiteSettings();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (!user) { setProfile(null); return; }
+    (supabase as any).from("profiles").select("username,plan,plan_expires_at,avatar_url").eq("user_id", user.id).maybeSingle().then(({ data }: any) => setProfile(data));
+  }, [user]);
+
+  const isPaid = profile?.plan === "paid" && (!profile?.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +33,7 @@ export function SiteHeader() {
       <div className="container mx-auto flex h-16 items-center gap-4 px-4">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg shrink-0">
           <PlayCircle className="h-6 w-6 text-primary" />
-          <span>StreamBD</span>
+          <span>{settings?.site_title ?? "StreamBD"}</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground ml-4">
@@ -37,14 +49,24 @@ export function SiteHeader() {
         </form>
 
         <div className="flex items-center gap-2 ml-auto">
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-5 w-5" />
-          </Button>
-          <Link to="/auth">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <UserIcon className="h-5 w-5" />
-            </Button>
-          </Link>
+          {user && !isPaid && (
+            <Link to="/profile" hash="subscribe" className="hidden sm:block">
+              <Button size="sm" className="bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-bold hover:opacity-90">
+                <Crown className="h-4 w-4 mr-1" /> Subscribe
+              </Button>
+            </Link>
+          )}
+          {user ? (
+            <Link to="/profile" className="flex items-center">
+              <div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold ${isPaid ? "bg-yellow-400 text-black ring-2 ring-yellow-300" : "bg-primary/20 text-primary"}`}>
+                {(profile?.username || user.email || "?").slice(0,2).toUpperCase()}
+              </div>
+            </Link>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm"><UserIcon className="h-4 w-4 mr-1" /> Sign in</Button>
+            </Link>
+          )}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden rounded-full">
@@ -57,7 +79,7 @@ export function SiteHeader() {
                 <Link to="/trending" className="text-lg">Trending</Link>
                 <Link to="/watch-later" className="text-lg">Watch Later</Link>
                 <Link to="/history" className="text-lg">History</Link>
-                <Link to="/auth" className="text-lg">Sign in</Link>
+                {user ? <Link to="/profile" className="text-lg">Profile</Link> : <Link to="/auth" className="text-lg">Sign in</Link>}
               </div>
             </SheetContent>
           </Sheet>

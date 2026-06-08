@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WatchLaterRouteImport } from './routes/watch-later'
 import { Route as TrendingRouteImport } from './routes/trending'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -43,6 +44,11 @@ const TrendingRoute = TrendingRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/categories'
     | '/history'
+    | '/profile'
     | '/search'
     | '/trending'
     | '/watch-later'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/categories'
     | '/history'
+    | '/profile'
     | '/search'
     | '/trending'
     | '/watch-later'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/categories'
     | '/history'
+    | '/profile'
     | '/search'
     | '/trending'
     | '/watch-later'
@@ -271,6 +283,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CategoriesRoute: typeof CategoriesRoute
   HistoryRoute: typeof HistoryRoute
+  ProfileRoute: typeof ProfileRoute
   SearchRoute: typeof SearchRoute
   TrendingRoute: typeof TrendingRoute
   WatchLaterRoute: typeof WatchLaterRoute
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -457,6 +477,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CategoriesRoute: CategoriesRoute,
   HistoryRoute: HistoryRoute,
+  ProfileRoute: ProfileRoute,
   SearchRoute: SearchRoute,
   TrendingRoute: TrendingRoute,
   WatchLaterRoute: WatchLaterRoute,
@@ -466,3 +487,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
