@@ -163,6 +163,53 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_slides: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          link_url: string | null
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_slides_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menus: {
         Row: {
           created_at: string
@@ -217,6 +264,42 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          plan: string
+          plan_expires_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          plan?: string
+          plan_expires_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          plan?: string
+          plan_expires_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           created_at: string
@@ -259,6 +342,7 @@ export type Database = {
           animation_particles: boolean
           dark_mode_default: boolean
           default_language: string
+          favicon_url: string | null
           id: number
           maintenance_message: string
           maintenance_title: string
@@ -268,6 +352,7 @@ export type Database = {
           site_description: string
           site_status: boolean
           site_title: string
+          telegram_bot_username: string
           updated_at: string
         }
         Insert: {
@@ -276,6 +361,7 @@ export type Database = {
           animation_particles?: boolean
           dark_mode_default?: boolean
           default_language?: string
+          favicon_url?: string | null
           id?: number
           maintenance_message?: string
           maintenance_title?: string
@@ -285,6 +371,7 @@ export type Database = {
           site_description?: string
           site_status?: boolean
           site_title?: string
+          telegram_bot_username?: string
           updated_at?: string
         }
         Update: {
@@ -293,6 +380,7 @@ export type Database = {
           animation_particles?: boolean
           dark_mode_default?: boolean
           default_language?: string
+          favicon_url?: string | null
           id?: number
           maintenance_message?: string
           maintenance_title?: string
@@ -302,6 +390,7 @@ export type Database = {
           site_description?: string
           site_status?: boolean
           site_title?: string
+          telegram_bot_username?: string
           updated_at?: string
         }
         Relationships: []
@@ -336,6 +425,42 @@ export type Database = {
           sort_order?: number
           updated_at?: string
           url?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          currency: string
+          duration_months: number
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          duration_months: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          duration_months?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
