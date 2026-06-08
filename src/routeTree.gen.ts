@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WatchLaterRouteImport } from './routes/watch-later'
 import { Route as TrendingRouteImport } from './routes/trending'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -21,8 +22,12 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as AdminVideosRouteImport } from './routes/admin.videos'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSocialRouteImport } from './routes/admin.social'
+import { Route as AdminSliderRouteImport } from './routes/admin.slider'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminFakeRouteImport } from './routes/admin.fake'
 import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
@@ -43,6 +48,11 @@ const TrendingRoute = TrendingRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -90,14 +100,34 @@ const AdminVideosRoute = AdminVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSocialRoute = AdminSocialRouteImport.update({
   id: '/social',
   path: '/social',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSliderRoute = AdminSliderRouteImport.update({
+  id: '/slider',
+  path: '/slider',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminMenuRoute = AdminMenuRouteImport.update({
@@ -137,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
@@ -146,8 +177,12 @@ export interface FileRoutesByFullPath {
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/fake': typeof AdminFakeRoute
   '/admin/menu': typeof AdminMenuRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/slider': typeof AdminSliderRoute
   '/admin/social': typeof AdminSocialRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
@@ -158,6 +193,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
@@ -167,8 +203,12 @@ export interface FileRoutesByTo {
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/fake': typeof AdminFakeRoute
   '/admin/menu': typeof AdminMenuRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/slider': typeof AdminSliderRoute
   '/admin/social': typeof AdminSocialRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
@@ -181,6 +221,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/history': typeof HistoryRoute
+  '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/trending': typeof TrendingRoute
   '/watch-later': typeof WatchLaterRoute
@@ -190,8 +231,12 @@ export interface FileRoutesById {
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/fake': typeof AdminFakeRoute
   '/admin/menu': typeof AdminMenuRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/slider': typeof AdminSliderRoute
   '/admin/social': typeof AdminSocialRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
   '/category/$slug': typeof CategorySlugRoute
   '/video/$id': typeof VideoIdRoute
@@ -205,6 +250,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/categories'
     | '/history'
+    | '/profile'
     | '/search'
     | '/trending'
     | '/watch-later'
@@ -214,8 +260,12 @@ export interface FileRouteTypes {
     | '/admin/comments'
     | '/admin/fake'
     | '/admin/menu'
+    | '/admin/reports'
     | '/admin/settings'
+    | '/admin/slider'
     | '/admin/social'
+    | '/admin/subscriptions'
+    | '/admin/users'
     | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
@@ -226,6 +276,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/categories'
     | '/history'
+    | '/profile'
     | '/search'
     | '/trending'
     | '/watch-later'
@@ -235,8 +286,12 @@ export interface FileRouteTypes {
     | '/admin/comments'
     | '/admin/fake'
     | '/admin/menu'
+    | '/admin/reports'
     | '/admin/settings'
+    | '/admin/slider'
     | '/admin/social'
+    | '/admin/subscriptions'
+    | '/admin/users'
     | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
@@ -248,6 +303,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/categories'
     | '/history'
+    | '/profile'
     | '/search'
     | '/trending'
     | '/watch-later'
@@ -257,8 +313,12 @@ export interface FileRouteTypes {
     | '/admin/comments'
     | '/admin/fake'
     | '/admin/menu'
+    | '/admin/reports'
     | '/admin/settings'
+    | '/admin/slider'
     | '/admin/social'
+    | '/admin/subscriptions'
+    | '/admin/users'
     | '/admin/videos'
     | '/category/$slug'
     | '/video/$id'
@@ -271,6 +331,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CategoriesRoute: typeof CategoriesRoute
   HistoryRoute: typeof HistoryRoute
+  ProfileRoute: typeof ProfileRoute
   SearchRoute: typeof SearchRoute
   TrendingRoute: typeof TrendingRoute
   WatchLaterRoute: typeof WatchLaterRoute
@@ -299,6 +360,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -364,6 +432,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVideosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/social': {
       id: '/admin/social'
       path: '/social'
@@ -371,11 +453,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSocialRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/slider': {
+      id: '/admin/slider'
+      path: '/slider'
+      fullPath: '/admin/slider'
+      preLoaderRoute: typeof AdminSliderRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/menu': {
@@ -430,8 +526,12 @@ interface AdminRouteChildren {
   AdminCommentsRoute: typeof AdminCommentsRoute
   AdminFakeRoute: typeof AdminFakeRoute
   AdminMenuRoute: typeof AdminMenuRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSliderRoute: typeof AdminSliderRoute
   AdminSocialRoute: typeof AdminSocialRoute
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminVideosRoute: typeof AdminVideosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -443,8 +543,12 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCommentsRoute: AdminCommentsRoute,
   AdminFakeRoute: AdminFakeRoute,
   AdminMenuRoute: AdminMenuRoute,
+  AdminReportsRoute: AdminReportsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminSliderRoute: AdminSliderRoute,
   AdminSocialRoute: AdminSocialRoute,
+  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminVideosRoute: AdminVideosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -457,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CategoriesRoute: CategoriesRoute,
   HistoryRoute: HistoryRoute,
+  ProfileRoute: ProfileRoute,
   SearchRoute: SearchRoute,
   TrendingRoute: TrendingRoute,
   WatchLaterRoute: WatchLaterRoute,
@@ -466,13 +571,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Video, Folder, MessageSquare, Megaphone, MenuIcon, Settings, Sparkles, BarChart3, LogOut, PlayCircle, Share2 } from "lucide-react";
+import { LayoutDashboard, Video, Folder, MessageSquare, Megaphone, MenuIcon, Settings, Sparkles, BarChart3, LogOut, PlayCircle, Share2, Users, Flag, Crown, GalleryHorizontal } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — StreamBD" }, { name: "robots", content: "noindex" }] }),
@@ -14,10 +14,14 @@ const nav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/videos", label: "Videos", icon: Video },
   { to: "/admin/categories", label: "Categories", icon: Folder },
+  { to: "/admin/slider", label: "Homepage Slider", icon: GalleryHorizontal },
+  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/reports", label: "Reports", icon: Flag },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/ads", label: "Ads Manager", icon: Megaphone },
   { to: "/admin/menu", label: "Header Menu", icon: MenuIcon },
   { to: "/admin/social", label: "Social Links", icon: Share2 },
+  { to: "/admin/subscriptions", label: "Subscriptions", icon: Crown },
   { to: "/admin/settings", label: "Site Settings", icon: Settings },
   { to: "/admin/fake", label: "Fake Settings", icon: Sparkles },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },

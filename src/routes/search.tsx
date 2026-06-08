@@ -36,7 +36,7 @@ function SearchPage() {
   }, [query]);
 
   return (
-    <SiteLayout>
+    <SiteLayout requireAuth>
       <div className="container mx-auto px-4 py-8">
         <Input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search videos..." className="text-lg h-12 mb-4" />
         <p className="text-sm text-muted-foreground mb-6">

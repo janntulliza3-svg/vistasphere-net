@@ -44,6 +44,12 @@ function SettingsAdmin() {
           <h2 className="font-semibold">SEO</h2>
           <div><Label>Site title</Label><Input value={s.site_title} onChange={e=>set("site_title",e.target.value)} /></div>
           <div><Label>Description</Label><Textarea value={s.site_description} onChange={e=>set("site_description",e.target.value)} /></div>
+          <div><Label>Favicon URL</Label><Input value={s.favicon_url ?? ""} onChange={e=>set("favicon_url",e.target.value)} placeholder="https://.../favicon.png" /></div>
+        </section>
+        <section className="bg-card border border-border rounded-xl p-5 space-y-3">
+          <h2 className="font-semibold">Telegram</h2>
+          <div><Label>Bot username (no @)</Label><Input value={s.telegram_bot_username ?? "vipdesi_bot"} onChange={e=>set("telegram_bot_username",e.target.value)} placeholder="vipdesi_bot" /></div>
+          <p className="text-xs text-muted-foreground">Used by the subscription "Buy" button to open Telegram with a prefilled message.</p>
         </section>
         <Button onClick={save}>Save changes</Button>
       </div>

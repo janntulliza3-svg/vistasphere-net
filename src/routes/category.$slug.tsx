@@ -34,7 +34,7 @@ function CategoryPage() {
   }, [slug, sort]);
 
   return (
-    <SiteLayout>
+    <SiteLayout requireAuth>
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h1 className="text-3xl font-bold flex items-center gap-3">
