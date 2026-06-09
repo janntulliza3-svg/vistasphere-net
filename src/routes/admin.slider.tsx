@@ -25,8 +25,9 @@ function SliderAdmin() {
     if (error) toast.error(error.message);
   };
   const add = async () => {
-    await (supabase as any).from("hero_slides").insert({ title: "New slide", image_url: "https://picsum.photos/1600/700", sort_order: items.length+1 });
-    load();
+    const { data, error } = await (supabase as any).from("hero_slides").insert({ title: "New slide", image_url: "https://picsum.photos/1600/700", sort_order: items.length+1 }).select().single();
+    if (error) return toast.error(error.message);
+    setItems(prev => [...prev, data]);
   };
   return (
     <div className="p-6 max-w-5xl">
