@@ -12,8 +12,16 @@ function ReportsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const load = () => (supabase as any).from("reports").select("*, videos(id,title)").order("created_at",{ascending:false}).limit(200).then(({data}: any) => setItems(data ?? []));
   useEffect(() => { load(); }, []);
-  const remove = async (id: string) => { await (supabase as any).from("reports").delete().eq("id", id); toast.success("Deleted"); load(); };
-  const resolve = async (id: string) => { await (supabase as any).from("reports").update({ status: "resolved" }).eq("id", id); toast.success("Resolved"); load(); };
+  const remove = async (id: string) => {
+    setItems(prev => prev.filter(r => r.id !== id));
+    const { error } = await (supabase as any).from("reports").delete().eq("id", id);
+    if (error) toast.error(error.message); else toast.success("Deleted");
+  };
+  const resolve = async (id: string) => {
+    setItems(prev => prev.map(r => r.id === id ? { ...r, status: "resolved" } : r));
+    const { error } = await (supabase as any).from("reports").update({ status: "resolved" }).eq("id", id);
+    if (error) toast.error(error.message); else toast.success("Resolved");
+  };
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Reports ({items.length})</h1>
