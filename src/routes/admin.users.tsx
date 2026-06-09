@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ function UsersAdmin() {
   const _delete = useServerFn(deleteUser);
   const _update = useServerFn(updateUserProfile);
   const [items, setItems] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,22 +30,42 @@ function UsersAdmin() {
     try { setItems(await _list({} as any)); } catch (e: any) { toast.error(e.message); }
     setLoading(false);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    (supabase as any).from("subscription_plans").select("*").eq("is_active", true).order("sort_order")
+      .then(({ data }: any) => setPlans(data ?? []));
+  }, []);
+
+  // Optimistic local patch — no full reload
+  const patchLocal = (id: string, patch: any) =>
+    setItems(items => items.map(u => u.id === id ? { ...u, profile: { ...(u.profile ?? {}), ...patch } } : u));
 
   const add = async () => {
-    try { await _create({ data: { email, password } }); setEmail(""); setPassword(""); toast.success("User added"); load(); }
+    try { await _create({ data: { email, password } }); setEmail(""); setPassword(""); toast.success("User added"); await load(); }
     catch (e: any) { toast.error(e.message); }
   };
   const remove = async (id: string) => {
     if (!confirm("Delete this user?")) return;
-    try { await _delete({ data: { userId: id } }); toast.success("Deleted"); load(); } catch (e: any) { toast.error(e.message); }
+    try { await _delete({ data: { userId: id } }); setItems(items => items.filter(u => u.id !== id)); toast.success("Deleted"); } catch (e: any) { toast.error(e.message); }
   };
   const setStatus = async (id: string, status: string) => {
-    try { await _update({ data: { userId: id, status: status as any } }); toast.success("Status updated"); load(); } catch (e: any) { toast.error(e.message); }
+    patchLocal(id, { status });
+    try { await _update({ data: { userId: id, status: status as any } }); toast.success("Status updated"); }
+    catch (e: any) { toast.error(e.message); }
   };
-  const setPlan = async (id: string, plan: "free"|"paid", months?: number) => {
-    const expires = plan === "paid" && months ? new Date(Date.now() + months * 30 * 24 * 3600 * 1000).toISOString() : null;
-    try { await _update({ data: { userId: id, plan, plan_expires_at: expires } }); toast.success("Plan updated"); load(); } catch (e: any) { toast.error(e.message); }
+  const assignPlan = async (id: string, planId: string) => {
+    if (planId === "free") {
+      patchLocal(id, { plan: "free", plan_expires_at: null });
+      try { await _update({ data: { userId: id, plan: "free", plan_expires_at: null } }); toast.success("Set to Free"); }
+      catch (e: any) { toast.error(e.message); }
+      return;
+    }
+    const p = plans.find(x => x.id === planId);
+    if (!p) return;
+    const expires = new Date(Date.now() + p.duration_months * 30 * 24 * 3600 * 1000).toISOString();
+    patchLocal(id, { plan: "paid", plan_expires_at: expires });
+    try { await _update({ data: { userId: id, planId } }); toast.success(`Activated: ${p.name}`); }
+    catch (e: any) { toast.error(e.message); }
   };
 
   const filtered = items.filter(u => !filter || (u.email ?? "").toLowerCase().includes(filter.toLowerCase()));
@@ -81,14 +103,17 @@ function UsersAdmin() {
                     <td className="p-3">{u.email}</td>
                     <td className="p-3 text-muted-foreground">{u.profile?.username ?? "-"}</td>
                     <td className="p-3">
-                      <Select value={u.profile?.plan ?? "free"} onValueChange={(v) => setPlan(u.id, v as any, v === "paid" ? 1 : undefined)}>
-                        <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                      <Select value={isPaid ? "__paid__" : "free"} onValueChange={(v) => assignPlan(u.id, v)}>
+                        <SelectTrigger className="w-44"><SelectValue placeholder="Assign plan" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="free">Free</SelectItem>
-                          <SelectItem value="paid">Paid (1m)</SelectItem>
+                          {isPaid && <SelectItem value="__paid__" disabled>Paid (current)</SelectItem>}
+                          {plans.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}m ({p.price} {p.currency})</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
-                      {isPaid && <div className="text-xs text-yellow-500 flex items-center gap-1 mt-1"><Crown className="h-3 w-3" /> Gold</div>}
+                      {isPaid && <div className="text-xs text-yellow-500 flex items-center gap-1 mt-1"><Crown className="h-3 w-3" /> Gold{u.profile?.plan_expires_at ? ` · until ${new Date(u.profile.plan_expires_at).toLocaleDateString("en-GB")}` : ""}</div>}
                     </td>
                     <td className="p-3">
                       <Select value={u.profile?.status ?? "active"} onValueChange={(v) => setStatus(u.id, v)}>
