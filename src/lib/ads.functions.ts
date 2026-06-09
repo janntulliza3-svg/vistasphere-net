@@ -20,7 +20,7 @@ export const updateAd = createServerFn({ method: "POST" })
     const { data: roleRow } = await supabaseAdmin
       .from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
     if (!roleRow) throw new Error("Forbidden");
-    const patch: Record<string, unknown> = {};
+    const patch: { ad_code?: string | null; popunder_url?: string | null; is_active?: boolean; once_per_user?: boolean } = {};
     if (data.ad_code_b64 !== undefined) {
       patch.ad_code = data.ad_code_b64 ? Buffer.from(data.ad_code_b64, "base64").toString("utf-8") : null;
     }
