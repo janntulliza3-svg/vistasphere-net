@@ -16,15 +16,16 @@ function CatsAdmin() {
   useEffect(() => { load(); }, []);
   const add = async () => {
     if (!name.trim()) return;
-    const { error } = await supabase.from("categories").insert({ name: name.trim(), slug: slugify(name) });
+    const { data, error } = await supabase.from("categories").insert({ name: name.trim(), slug: slugify(name) }).select("*, videos(count)").single();
     if (error) return toast.error(error.message);
-    setName(""); toast.success("Added"); load();
+    setCats(prev => [...prev, data]);
+    setName(""); toast.success("Added");
   };
   const remove = async (id: string) => {
     if (!confirm("Delete category?")) return;
+    setCats(prev => prev.filter(c => c.id !== id));
     const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    load();
+    if (error) toast.error(error.message);
   };
   return (
     <div className="p-6">

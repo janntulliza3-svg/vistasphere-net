@@ -43,19 +43,25 @@ function VideosAdmin() {
     if (!form.title || !form.thumbnail_url || !detectedUrl) return toast.error("Title, thumbnail, and a valid embed are required");
     const payload = { ...form, video_url: detectedUrl, embed_code_backup: embedInput };
     delete payload.categories;
-    const res = editing
-      ? await supabase.from("videos").update(payload).eq("id", editing.id)
-      : await supabase.from("videos").insert(payload);
-    if (res.error) return toast.error(res.error.message);
-    toast.success(editing ? "Video updated" : "Video added");
-    setOpen(false); load();
+    if (editing) {
+      const { data, error } = await supabase.from("videos").update(payload).eq("id", editing.id).select("*, categories(name)").single();
+      if (error) return toast.error(error.message);
+      setVideos(prev => prev.map(v => v.id === editing.id ? data : v));
+      toast.success("Video updated");
+    } else {
+      const { data, error } = await supabase.from("videos").insert(payload).select("*, categories(name)").single();
+      if (error) return toast.error(error.message);
+      setVideos(prev => [data, ...prev]);
+      toast.success("Video added");
+    }
+    setOpen(false);
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this video?")) return;
+    setVideos(prev => prev.filter(v => v.id !== id));
     const { error } = await supabase.from("videos").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Deleted"); load();
+    if (error) toast.error(error.message); else toast.success("Deleted");
   };
 
   const addCategory = async () => {

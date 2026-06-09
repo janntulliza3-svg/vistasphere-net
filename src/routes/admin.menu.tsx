@@ -15,11 +15,16 @@ function MenuAdmin() {
   useEffect(() => { load(); }, []);
   const add = async () => {
     if (!form.name || !form.url) return;
-    const { error } = await supabase.from("menus").insert({ ...form, sort_order: items.length });
+    const { data, error } = await supabase.from("menus").insert({ ...form, sort_order: items.length }).select().single();
     if (error) return toast.error(error.message);
-    setForm({name:"",url:"",icon:""}); load();
+    setItems(prev => [...prev, data]);
+    setForm({name:"",url:"",icon:""});
   };
-  const remove = async (id: string) => { await supabase.from("menus").delete().eq("id", id); load(); };
+  const remove = async (id: string) => {
+    setItems(prev => prev.filter(m => m.id !== id));
+    const { error } = await supabase.from("menus").delete().eq("id", id);
+    if (error) toast.error(error.message);
+  };
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Header Menu</h1>
