@@ -267,6 +267,19 @@ function VideoPage() {
           </aside>
         </div>
       </div>
+      <AlertDialog open={showRestricted} onOpenChange={setShowRestricted}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">ID Restricted</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your account has been restricted for posting links or violating community rules. You can no longer comment or watch videos. Contact admin to appeal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowRestricted(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SiteLayout>
   );
 }
