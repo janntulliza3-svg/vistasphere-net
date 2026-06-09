@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,14 +8,22 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { updateAd } from "@/lib/ads.functions";
 
 export const Route = createFileRoute("/admin/ads")({ component: AdsAdmin });
 
 function AdsAdmin() {
   const [ads, setAds] = useState<any[]>([]);
+  const _update = useServerFn(updateAd);
   const load = () => supabase.from("ads").select("*").order("position").then(({data}) => setAds(data ?? []));
   useEffect(() => { load(); }, []);
-  const save = async (a: any) => { const { error } = await supabase.from("ads").update({ ad_code:a.ad_code, is_active:a.is_active, popunder_url:a.popunder_url, once_per_user:a.once_per_user }).eq("id", a.id); if (error) toast.error(error.message); else toast.success("Saved"); };
+  const save = async (a: any) => {
+    try {
+      const b64 = a.ad_code ? btoa(unescape(encodeURIComponent(a.ad_code))) : "";
+      await _update({ data: { id: a.id, ad_code_b64: b64, is_active: a.is_active, popunder_url: a.popunder_url ?? null, once_per_user: !!a.once_per_user } });
+      toast.success("Saved");
+    } catch (e: any) { toast.error(e.message ?? "Save failed"); }
+  };
   const update = (id: string, patch: any) => setAds(ads.map(a => a.id===id ? { ...a, ...patch } : a));
   return (
     <div className="p-6">
