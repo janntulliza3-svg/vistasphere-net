@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useServerFn } from "@tanstack/react-start";
 import { incrementVideoView } from "@/lib/admin-users.functions";
 import { getVideoEngagement } from "@/lib/engagement.functions";
+import { getMyStatus, selfRestrict } from "@/lib/restrict.functions";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/video/$id")({
   head: ({ params }) => ({
@@ -54,9 +56,21 @@ function VideoPage() {
   const [reportReason, setReportReason] = useState("Broken Video");
   const incView = useServerFn(incrementVideoView);
   const fetchEngagement = useServerFn(getVideoEngagement);
+  const fetchMyStatus = useServerFn(getMyStatus);
+  const doSelfRestrict = useServerFn(selfRestrict);
+  const [restricted, setRestricted] = useState(false);
+  const [showRestricted, setShowRestricted] = useState(false);
 
   useEffect(() => {
     (async () => {
+      try {
+        const s = await fetchMyStatus();
+        if (s.status === "restricted" || s.status === "banned") {
+          setRestricted(true);
+          setShowRestricted(true);
+          return;
+        }
+      } catch {}
       const { data: v } = await supabase.from("videos").select("*").eq("id", id).maybeSingle();
       setVideo(v);
       if (v) {
@@ -82,6 +96,7 @@ function VideoPage() {
   }, [id]);
 
   const handlePlay = () => {
+    if (restricted) { setShowRestricted(true); return; }
     if (!video) return;
     const key = "popunder_shown";
     if (!localStorage.getItem(key) && video.popunder_url) {
@@ -107,11 +122,18 @@ function VideoPage() {
   };
 
   const postComment = async () => {
+    if (restricted) { setShowRestricted(true); return; }
     if (!commentText.trim() || !commentName.trim()) return toast.error("Name and comment required");
     const hasLink = containsLink(commentText);
-    const text = hasLink ? "[Link removed by system]" : commentText.trim();
+    if (hasLink) {
+      try { await doSelfRestrict(); } catch {}
+      setRestricted(true);
+      setShowRestricted(true);
+      return;
+    }
+    const text = commentText.trim();
     const { error, data } = await supabase.from("comments").insert({
-      video_id: id, username: commentName.trim(), comment: text, rating: commentRating, has_link: hasLink,
+      video_id: id, username: commentName.trim(), comment: text, rating: commentRating, has_link: false,
     }).select().single();
     if (error) return toast.error(error.message);
     setComments([data, ...comments]);
@@ -245,6 +267,19 @@ function VideoPage() {
           </aside>
         </div>
       </div>
+      <AlertDialog open={showRestricted} onOpenChange={setShowRestricted}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">ID Restricted</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your account has been restricted for posting links or violating community rules. You can no longer comment or watch videos. Contact admin to appeal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowRestricted(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SiteLayout>
   );
 }

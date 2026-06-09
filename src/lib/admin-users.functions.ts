@@ -63,12 +63,13 @@ export const deleteUser = createServerFn({ method: "POST" })
 
 export const updateUserProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { userId: string; status?: string; plan?: string; plan_expires_at?: string | null }) =>
+  .inputValidator((d: { userId: string; status?: string; plan?: string; plan_expires_at?: string | null; planId?: string | null }) =>
     z.object({
       userId: z.string().uuid(),
       status: z.enum(["active","banned","restricted"]).optional(),
       plan: z.enum(["free","paid"]).optional(),
       plan_expires_at: z.string().nullable().optional(),
+      planId: z.string().uuid().nullable().optional(),
     }).parse(d))
   .handler(async ({ context, data }) => {
     const admin = await ensureAdmin(context.userId);
@@ -76,6 +77,12 @@ export const updateUserProfile = createServerFn({ method: "POST" })
     if (data.status) patch.status = data.status;
     if (data.plan) patch.plan = data.plan;
     if (data.plan_expires_at !== undefined) patch.plan_expires_at = data.plan_expires_at;
+    if (data.planId) {
+      const { data: plan } = await admin.from("subscription_plans").select("duration_months,is_active").eq("id", data.planId).maybeSingle();
+      if (!plan?.is_active) throw new Error("Plan inactive");
+      patch.plan = "paid";
+      patch.plan_expires_at = new Date(Date.now() + plan.duration_months * 30 * 24 * 3600 * 1000).toISOString();
+    }
     const { error } = await admin.from("profiles").update(patch).eq("user_id", data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
