@@ -51,17 +51,17 @@ function AdminSocialPage() {
       return;
     }
     const sort_order = items.length ? Math.max(...items.map(i => i.sort_order)) + 1 : 1;
-    const { error } = await supabase.from("social_links").insert({
+    const { data, error } = await supabase.from("social_links").insert({
       platform: newItem.platform.trim(),
       url: newItem.url.trim(),
       icon: newItem.icon.trim() || "Link",
       sort_order,
       is_active: true,
-    });
+    }).select().single();
     if (error) { toast.error(error.message); return; }
-    toast.success("Social link added");
+    setItems(prev => [...prev, data as SocialLink]);
     setNewItem({ platform: "", url: "", icon: "Link" });
-    void load();
+    toast.success("Social link added");
   };
 
   const update = async (id: string, patch: Partial<SocialLink>) => {
