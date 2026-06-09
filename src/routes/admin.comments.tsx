@@ -12,7 +12,11 @@ function CommentsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const load = () => supabase.from("comments").select("*, videos(title)").order("created_at",{ascending:false}).limit(100).then(({data}) => setItems(data ?? []));
   useEffect(() => { load(); }, []);
-  const remove = async (id: string) => { await supabase.from("comments").delete().eq("id", id); toast.success("Deleted"); load(); };
+  const remove = async (id: string) => {
+    setItems(prev => prev.filter(c => c.id !== id));
+    const { error } = await supabase.from("comments").delete().eq("id", id);
+    if (error) toast.error(error.message); else toast.success("Deleted");
+  };
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Comments</h1>
