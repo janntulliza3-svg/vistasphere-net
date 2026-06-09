@@ -14,9 +14,21 @@ function SubsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const load = () => (supabase as any).from("subscription_plans").select("*").order("sort_order").then(({data}: any) => setItems(data ?? []));
   useEffect(() => { load(); }, []);
-  const update = async (id: string, patch: any) => { const { error } = await (supabase as any).from("subscription_plans").update(patch).eq("id", id); if (error) toast.error(error.message); else load(); };
-  const remove = async (id: string) => { await (supabase as any).from("subscription_plans").delete().eq("id", id); toast.success("Deleted"); load(); };
-  const add = async () => { await (supabase as any).from("subscription_plans").insert({ name: "New Plan", duration_months: 1, price: 0, sort_order: items.length+1 }); load(); };
+  const update = async (id: string, patch: any) => {
+    setItems(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+    const { error } = await (supabase as any).from("subscription_plans").update(patch).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+  const remove = async (id: string) => {
+    setItems(prev => prev.filter(p => p.id !== id));
+    const { error } = await (supabase as any).from("subscription_plans").delete().eq("id", id);
+    if (error) toast.error(error.message); else toast.success("Deleted");
+  };
+  const add = async () => {
+    const { data, error } = await (supabase as any).from("subscription_plans").insert({ name: "New Plan", duration_months: 1, price: 0, sort_order: items.length+1 }).select().single();
+    if (error) return toast.error(error.message);
+    setItems(prev => [...prev, data]);
+  };
 
   return (
     <div className="p-6 max-w-4xl">
