@@ -115,6 +115,7 @@ function VideoPage() {
     }).select().single();
     if (error) return toast.error(error.message);
     setComments([data, ...comments]);
+    setDisplayComments([data, ...displayComments]);
     setCommentText("");
     toast.success("Comment posted");
   };
