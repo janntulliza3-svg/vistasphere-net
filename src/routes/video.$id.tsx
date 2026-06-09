@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useServerFn } from "@tanstack/react-start";
 import { incrementVideoView } from "@/lib/admin-users.functions";
+import { getVideoEngagement } from "@/lib/engagement.functions";
 
 export const Route = createFileRoute("/video/$id")({
   head: ({ params }) => ({
@@ -43,7 +44,8 @@ function VideoPage() {
   const [video, setVideo] = useState<any>(null);
   const [related, setRelated] = useState<VideoCardData[]>([]);
   const [comments, setComments] = useState<any[]>([]);
-  const [fake, setFake] = useState<any>(null);
+  const [displayLikes, setDisplayLikes] = useState<number>(0);
+  const [displayComments, setDisplayComments] = useState<any[]>([]);
   const [showPlayer, setShowPlayer] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -51,6 +53,7 @@ function VideoPage() {
   const [commentRating, setCommentRating] = useState(5);
   const [reportReason, setReportReason] = useState("Broken Video");
   const incView = useServerFn(incrementVideoView);
+  const fetchEngagement = useServerFn(getVideoEngagement);
 
   useEffect(() => {
     (async () => {
@@ -67,8 +70,14 @@ function VideoPage() {
       }
       const { data: c } = await supabase.from("comments").select("*").eq("video_id", id).eq("status","approved").order("created_at",{ascending:false}).limit(20);
       setComments(c ?? []);
-      const { data: f } = await (supabase as any).from("fake_settings").select("*").eq("id",1).maybeSingle();
-      setFake(f);
+      try {
+        const eng = await fetchEngagement({ data: { videoId: id } });
+        setDisplayLikes(eng.displayLikes);
+        setDisplayComments(eng.displayComments);
+      } catch {
+        setDisplayLikes(v?.likes ?? 0);
+        setDisplayComments(c ?? []);
+      }
     })();
   }, [id]);
 
@@ -106,6 +115,7 @@ function VideoPage() {
     }).select().single();
     if (error) return toast.error(error.message);
     setComments([data, ...comments]);
+    setDisplayComments([data, ...displayComments]);
     setCommentText("");
     toast.success("Comment posted");
   };
@@ -116,35 +126,6 @@ function VideoPage() {
   };
 
   if (!video) return <SiteLayout requireAuth><div className="container mx-auto px-4 py-12 text-muted-foreground">Loading...</div></SiteLayout>;
-
-  // Apply fake likes
-  let displayLikes = video.likes ?? 0;
-  if (fake?.enable_fake_likes) {
-    const mult = fake.like_multiplier || 1;
-    const variation = fake.random_variation ? (0.9 + ((parseInt(id.replace(/-/g,"").slice(0,8),16) % 200) / 1000)) : 1;
-    displayLikes = Math.max(displayLikes, Math.floor((displayLikes || 1) * mult * variation));
-  }
-
-  // Generate fake comments mixed with real
-  let displayComments = comments;
-  if (fake?.enable_fake_comments) {
-    const templates: string[] = (fake.templates || "").split("\n").map((s: string) => s.trim()).filter(Boolean);
-    const names = ["Rakib","Sumaiya","Tanvir","Nadia","Hasan","Mim","Arif","Sadia","Imran","Farhana"];
-    const seedNum = parseInt(id.replace(/-/g,"").slice(0,8), 16);
-    const count = fake.fake_comments_per_video || 0;
-    const fakeOnes = Array.from({ length: count }).map((_, i) => {
-      const seed = seedNum + i * 137;
-      const t = templates[seed % Math.max(templates.length,1)] || "Nice video!";
-      const n = fake.random_usernames ? names[seed % names.length] : "Guest";
-      const ago = fake.random_timestamps ? new Date(Date.now() - ((seed % 72) + 1) * 3600 * 1000).toISOString() : new Date().toISOString();
-      const rating = fake.auto_star_rating ? (4 + (seed % 2)) : 5;
-      return { id: `fake-${id}-${i}`, username: n, comment: t, rating, created_at: ago, has_link: false, _fake: true };
-    });
-    const mix = fake.mix_ratio ?? 70;
-    const totalReal = comments.length;
-    const keepReal = Math.max(0, Math.floor(totalReal * (100 - mix) / 100));
-    displayComments = [...fakeOnes, ...comments.slice(0, keepReal || comments.length)];
-  }
 
   return (
     <SiteLayout requireAuth>
