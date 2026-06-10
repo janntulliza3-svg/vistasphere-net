@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Pencil, Check } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, Download, Upload } from "lucide-react";
 import { extractIframeSrc, slugify, formatViews, timeAgo } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -73,10 +73,62 @@ function VideosAdmin() {
     toast.success("Category added");
   };
 
+  const exportJson = () => {
+    const rows = videos.map(({ categories, ...v }) => ({ ...v, category_name: categories?.name ?? null }));
+    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `videos-${new Date().toISOString().slice(0,10)}.json`; a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} videos`);
+  };
+
+  const importJson = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const arr = Array.isArray(parsed) ? parsed : [parsed];
+      if (!arr.length) return toast.error("Empty JSON");
+      const catByName = new Map(cats.map(c => [c.name.toLowerCase(), c.id]));
+      let ok = 0, fail = 0;
+      const inserted: any[] = [];
+      for (const raw of arr) {
+        const r: any = { ...raw };
+        delete r.id; delete r.created_at; delete r.updated_at; delete r.categories;
+        if (!r.category_id && r.category_name) {
+          const key = String(r.category_name).toLowerCase();
+          let cid = catByName.get(key);
+          if (!cid) {
+            const slug = slugify(r.category_name);
+            const { data: nc } = await supabase.from("categories").insert({ name: r.category_name, slug }).select().single();
+            if (nc) { cid = nc.id; catByName.set(key, cid); setCats(prev => [...prev, nc]); }
+          }
+          r.category_id = cid ?? null;
+        }
+        delete r.category_name;
+        if (!r.title || !r.thumbnail_url || !r.video_url) { fail++; continue; }
+        const { data, error } = await supabase.from("videos").insert(r).select("*, categories(name)").single();
+        if (error) { fail++; } else { ok++; inserted.push(data); }
+      }
+      if (inserted.length) setVideos(prev => [...inserted, ...prev]);
+      toast.success(`Imported ${ok}${fail ? `, ${fail} failed` : ""}`);
+    } catch (e: any) {
+      toast.error("Invalid JSON file: " + (e?.message ?? ""));
+    }
+  };
+
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
         <h1 className="text-2xl font-bold">Videos</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={exportJson}><Download className="h-4 w-4 mr-2" />Export JSON</Button>
+          <Button variant="outline" asChild>
+            <label className="cursor-pointer">
+              <Upload className="h-4 w-4 mr-2" />Import JSON
+              <input type="file" accept="application/json,.json" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ""; }} />
+            </label>
+          </Button>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild><Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Add Video</Button></SheetTrigger>
           <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -116,6 +168,7 @@ function VideosAdmin() {
             </div>
           </SheetContent>
         </Sheet>
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
