@@ -96,9 +96,16 @@ function VideosAdmin() {
       const inserted: any[] = [];
       for (const raw of arr) {
         const src: any = { ...raw };
+        // alias common field names from other CMS exports
+        if (!src.thumbnail_url) src.thumbnail_url = src.thumbnail ?? src.poster ?? src.image ?? src.poster_url ?? src.slider_image ?? "";
+        if (!src.embed_code_backup) src.embed_code_backup = src.embed_code ?? src.embed ?? src.iframe ?? "";
+        if (!src.duration) src.duration = src.quality ?? src.duration_text ?? undefined;
+        if (src.views === undefined) src.views = src.fake_views ?? src.view_count ?? src.clicks ?? undefined;
+        if (typeof src.is_featured === "string") src.is_featured = src.is_featured === "true" || src.is_featured === "1";
+        if (typeof src.status !== "string") src.status = "active";
         // resolve category by name if provided
-        let categoryId: string | null = src.category_id ?? null;
-        const catName = src.category_name ?? src.categories?.name ?? null;
+        let categoryId: string | null = (typeof src.category_id === "string" && /^[0-9a-f-]{36}$/i.test(src.category_id)) ? src.category_id : null;
+        const catName = src.category_name ?? src.category ?? src.categories?.name ?? null;
         if (!categoryId && catName) {
           const key = String(catName).toLowerCase();
           let cid = catByName.get(key);
@@ -119,7 +126,7 @@ function VideosAdmin() {
         if (embedRaw && !r.embed_code_backup) r.embed_code_backup = String(embedRaw);
         if (!r.title || !r.thumbnail_url || !r.video_url) {
           fail++;
-          if (!firstError) firstError = `Missing required field (title/thumbnail_url/video_url)`;
+          if (!firstError) firstError = `Missing required field. Got title=${!!r.title}, thumbnail_url=${!!r.thumbnail_url}, video_url=${!!r.video_url}`;
           continue;
         }
         const { data, error } = await supabase.from("videos").insert(r).select("*, categories(name)").single();
