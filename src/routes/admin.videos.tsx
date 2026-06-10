@@ -90,28 +90,46 @@ function VideosAdmin() {
       const arr = Array.isArray(parsed) ? parsed : [parsed];
       if (!arr.length) return toast.error("Empty JSON");
       const catByName = new Map(cats.map(c => [c.name.toLowerCase(), c.id]));
+      const ALLOWED = ["title","description","thumbnail_url","video_url","embed_code_backup","category_id","download_url","download_enabled","popunder_url","ads_enabled","duration","views","likes","dislikes","status","is_featured"];
       let ok = 0, fail = 0;
+      let firstError = "";
       const inserted: any[] = [];
       for (const raw of arr) {
-        const r: any = { ...raw };
-        delete r.id; delete r.created_at; delete r.updated_at; delete r.categories;
-        if (!r.category_id && r.category_name) {
-          const key = String(r.category_name).toLowerCase();
+        const src: any = { ...raw };
+        // resolve category by name if provided
+        let categoryId: string | null = src.category_id ?? null;
+        const catName = src.category_name ?? src.categories?.name ?? null;
+        if (!categoryId && catName) {
+          const key = String(catName).toLowerCase();
           let cid = catByName.get(key);
           if (!cid) {
-            const slug = slugify(r.category_name);
-            const { data: nc } = await supabase.from("categories").insert({ name: r.category_name, slug }).select().single();
+            const slug = slugify(catName);
+            const { data: nc } = await supabase.from("categories").insert({ name: catName, slug }).select().single();
             if (nc) { cid = nc.id; catByName.set(key, cid); setCats(prev => [...prev, nc]); }
           }
-          r.category_id = cid ?? null;
+          categoryId = cid ?? null;
         }
-        delete r.category_name;
-        if (!r.title || !r.thumbnail_url || !r.video_url) { fail++; continue; }
+        // detect embed from common fields
+        const embedRaw = src.embed_code_backup ?? src.embed ?? src.iframe ?? src.video_url ?? "";
+        const detected = extractIframeSrc(embedRaw) || src.video_url || "";
+        const r: any = {};
+        for (const k of ALLOWED) if (src[k] !== undefined && src[k] !== null) r[k] = src[k];
+        r.category_id = categoryId;
+        if (detected) r.video_url = detected;
+        if (embedRaw && !r.embed_code_backup) r.embed_code_backup = String(embedRaw);
+        if (!r.title || !r.thumbnail_url || !r.video_url) {
+          fail++;
+          if (!firstError) firstError = `Missing required field (title/thumbnail_url/video_url)`;
+          continue;
+        }
         const { data, error } = await supabase.from("videos").insert(r).select("*, categories(name)").single();
-        if (error) { fail++; } else { ok++; inserted.push(data); }
+        if (error) { fail++; if (!firstError) firstError = error.message; }
+        else { ok++; inserted.push(data); }
       }
       if (inserted.length) setVideos(prev => [...inserted, ...prev]);
-      toast.success(`Imported ${ok}${fail ? `, ${fail} failed` : ""}`);
+      if (ok) toast.success(`Imported ${ok}${fail ? `, ${fail} failed` : ""}`);
+      if (fail && !ok) toast.error(`All ${fail} failed. First error: ${firstError}`);
+      else if (fail) toast.warning(`${fail} failed. First error: ${firstError}`);
     } catch (e: any) {
       toast.error("Invalid JSON file: " + (e?.message ?? ""));
     }
