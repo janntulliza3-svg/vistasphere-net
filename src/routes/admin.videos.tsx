@@ -91,9 +91,10 @@ function VideosAdmin() {
       if (!arr.length) return toast.error("Empty JSON");
       const catByName = new Map(cats.map(c => [c.name.toLowerCase(), c.id]));
       const ALLOWED = ["title","description","thumbnail_url","video_url","embed_code_backup","category_id","download_url","download_enabled","popunder_url","ads_enabled","duration","views","likes","dislikes","status","is_featured"];
-      let ok = 0, fail = 0;
+      let fail = 0;
       let firstError = "";
-      const inserted: any[] = [];
+      const prepared: any[] = [];
+      const toastId = toast.loading(`Preparing ${arr.length} rows...`);
       for (const raw of arr) {
         const src: any = { ...raw };
         // alias common field names from other CMS exports
@@ -102,7 +103,7 @@ function VideosAdmin() {
         if (!src.duration) src.duration = src.quality ?? src.duration_text ?? undefined;
         if (src.views === undefined) src.views = src.fake_views ?? src.view_count ?? src.clicks ?? undefined;
         if (typeof src.is_featured === "string") src.is_featured = src.is_featured === "true" || src.is_featured === "1";
-        if (typeof src.status !== "string") src.status = "active";
+        if (typeof src.status !== "string" || !src.status) src.status = "active";
         // resolve category by name if provided
         let categoryId: string | null = (typeof src.category_id === "string" && /^[0-9a-f-]{36}$/i.test(src.category_id)) ? src.category_id : null;
         const catName = src.category_name ?? src.category ?? src.categories?.name ?? null;
@@ -129,14 +130,34 @@ function VideosAdmin() {
           if (!firstError) firstError = `Missing required field. Got title=${!!r.title}, thumbnail_url=${!!r.thumbnail_url}, video_url=${!!r.video_url}`;
           continue;
         }
-        const { data, error } = await supabase.from("videos").insert(r).select("*, categories(name)").single();
-        if (error) { fail++; if (!firstError) firstError = error.message; }
-        else { ok++; inserted.push(data); }
+        prepared.push(r);
+      }
+      // Batch insert in chunks of 100
+      let ok = 0;
+      const inserted: any[] = [];
+      const CHUNK = 100;
+      for (let i = 0; i < prepared.length; i += CHUNK) {
+        const chunk = prepared.slice(i, i + CHUNK);
+        toast.loading(`Inserting ${i + 1}-${Math.min(i + CHUNK, prepared.length)} of ${prepared.length}...`, { id: toastId });
+        const { data, error } = await supabase.from("videos").insert(chunk).select("*, categories(name)");
+        if (error) {
+          if (!firstError) firstError = error.message;
+          // fallback: insert one by one to salvage what we can
+          for (const row of chunk) {
+            const { data: d2, error: e2 } = await supabase.from("videos").insert(row).select("*, categories(name)").single();
+            if (e2) { fail++; if (!firstError) firstError = e2.message; }
+            else { ok++; inserted.push(d2); }
+          }
+        } else {
+          ok += data?.length ?? 0;
+          if (data) inserted.push(...data);
+        }
       }
       if (inserted.length) setVideos(prev => [...inserted, ...prev]);
-      if (ok) toast.success(`Imported ${ok}${fail ? `, ${fail} failed` : ""}`);
-      if (fail && !ok) toast.error(`All ${fail} failed. First error: ${firstError}`);
-      else if (fail) toast.warning(`${fail} failed. First error: ${firstError}`);
+      toast.dismiss(toastId);
+      if (ok && !fail) toast.success(`Imported all ${ok} videos`);
+      else if (ok) toast.warning(`Imported ${ok}, ${fail} failed. First error: ${firstError}`);
+      else toast.error(`All ${fail} failed. First error: ${firstError}`);
     } catch (e: any) {
       toast.error("Invalid JSON file: " + (e?.message ?? ""));
     }
