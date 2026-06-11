@@ -43,6 +43,10 @@ function VideosAdmin() {
     if (!form.title || !form.thumbnail_url || !detectedUrl) return toast.error("Title, thumbnail, and a valid embed are required");
     const payload = { ...form, video_url: detectedUrl, embed_code_backup: embedInput };
     delete payload.categories;
+    if (!editing) {
+      const { data: dup } = await supabase.from("videos").select("id").eq("video_url", detectedUrl).maybeSingle();
+      if (dup) return toast.error("Duplicate: this video is already posted");
+    }
     if (editing) {
       const { data, error } = await supabase.from("videos").update(payload).eq("id", editing.id).select("*, categories(name)").single();
       if (error) return toast.error(error.message);
@@ -50,7 +54,10 @@ function VideosAdmin() {
       toast.success("Video updated");
     } else {
       const { data, error } = await supabase.from("videos").insert(payload).select("*, categories(name)").single();
-      if (error) return toast.error(error.message);
+      if (error) {
+        if ((error as any).code === "23505") return toast.error("Duplicate: this video is already posted");
+        return toast.error(error.message);
+      }
       setVideos(prev => [data, ...prev]);
       toast.success("Video added");
     }
@@ -92,9 +99,14 @@ function VideosAdmin() {
       const catByName = new Map(cats.map(c => [c.name.toLowerCase(), c.id]));
       const ALLOWED = ["title","description","thumbnail_url","video_url","embed_code_backup","category_id","download_url","download_enabled","popunder_url","ads_enabled","duration","views","likes","dislikes","status","is_featured"];
       let fail = 0;
+      let dupes = 0;
       let firstError = "";
       const prepared: any[] = [];
       const toastId = toast.loading(`Preparing ${arr.length} rows...`);
+      // Pre-load existing video_urls for fast dedupe
+      const { data: existingRows } = await supabase.from("videos").select("video_url");
+      const existingUrls = new Set((existingRows ?? []).map((r: any) => r.video_url).filter(Boolean));
+      const seenInBatch = new Set<string>();
       for (const raw of arr) {
         const src: any = { ...raw };
         // alias common field names from other CMS exports
@@ -130,6 +142,11 @@ function VideosAdmin() {
           if (!firstError) firstError = `Missing required field. Got title=${!!r.title}, thumbnail_url=${!!r.thumbnail_url}, video_url=${!!r.video_url}`;
           continue;
         }
+        if (existingUrls.has(r.video_url) || seenInBatch.has(r.video_url)) {
+          dupes++;
+          continue;
+        }
+        seenInBatch.add(r.video_url);
         prepared.push(r);
       }
       // Batch insert in chunks of 100
@@ -145,7 +162,10 @@ function VideosAdmin() {
           // fallback: insert one by one to salvage what we can
           for (const row of chunk) {
             const { data: d2, error: e2 } = await supabase.from("videos").insert(row).select("*, categories(name)").single();
-            if (e2) { fail++; if (!firstError) firstError = e2.message; }
+            if (e2) {
+              if ((e2 as any).code === "23505") dupes++;
+              else { fail++; if (!firstError) firstError = e2.message; }
+            }
             else { ok++; inserted.push(d2); }
           }
         } else {
@@ -155,9 +175,11 @@ function VideosAdmin() {
       }
       if (inserted.length) setVideos(prev => [...inserted, ...prev]);
       toast.dismiss(toastId);
-      if (ok && !fail) toast.success(`Imported all ${ok} videos`);
-      else if (ok) toast.warning(`Imported ${ok}, ${fail} failed. First error: ${firstError}`);
-      else toast.error(`All ${fail} failed. First error: ${firstError}`);
+      const dupMsg = dupes ? `, skipped ${dupes} duplicate${dupes>1?"s":""}` : "";
+      if (ok && !fail) toast.success(`Imported ${ok} videos${dupMsg}`);
+      else if (ok) toast.warning(`Imported ${ok}${dupMsg}, ${fail} failed. First error: ${firstError}`);
+      else if (dupes && !fail) toast.warning(`Nothing imported — all ${dupes} were duplicates`);
+      else toast.error(`All ${fail} failed${dupMsg}. First error: ${firstError}`);
     } catch (e: any) {
       toast.error("Invalid JSON file: " + (e?.message ?? ""));
     }
