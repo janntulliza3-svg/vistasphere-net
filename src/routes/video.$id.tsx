@@ -41,6 +41,25 @@ function Stars({ value, onChange }: { value: number; onChange?: (n: number) => v
   );
 }
 
+function hasActiveSubscription(profile: any) {
+  return profile?.plan === "paid" && (!profile.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
+}
+
+function PlayerAdFrame({ adCode }: { adCode?: string | null }) {
+  if (!adCode) {
+    return <div className="text-sm text-muted-foreground">Advertisement loading...</div>;
+  }
+
+  return (
+    <iframe
+      title="Player advertisement"
+      srcDoc={adCode}
+      sandbox="allow-scripts allow-popups allow-forms allow-top-navigation-by-user-activation"
+      className="h-full w-full border-0 bg-background"
+    />
+  );
+}
+
 function VideoPage() {
   const { id } = Route.useParams();
   const [video, setVideo] = useState<any>(null);
@@ -54,6 +73,11 @@ function VideoPage() {
   const [commentName, setCommentName] = useState("");
   const [commentRating, setCommentRating] = useState(5);
   const [reportReason, setReportReason] = useState("Broken Video");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [playerAds, setPlayerAds] = useState<any[]>([]);
+  const [showAdGate, setShowAdGate] = useState(false);
+  const [activePlayerAd, setActivePlayerAd] = useState<any | null>(null);
   const incView = useServerFn(incrementVideoView);
   const fetchEngagement = useServerFn(getVideoEngagement);
   const fetchMyStatus = useServerFn(getMyStatus);
@@ -63,6 +87,12 @@ function VideoPage() {
 
   useEffect(() => {
     (async () => {
+      setVideo(null);
+      setShowPlayer(false);
+      setShowAdGate(false);
+      setActivePlayerAd(null);
+      setIsSubscribed(false);
+      setPlayerAds([]);
       try {
         const s = await fetchMyStatus();
         if (s.status === "restricted" || s.status === "banned") {
@@ -72,6 +102,28 @@ function VideoPage() {
         }
       } catch {}
       const { data: v } = await supabase.from("videos").select("*").eq("id", id).maybeSingle();
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData.user?.id ?? null;
+      setUserId(currentUserId);
+
+      let subscribed = false;
+      if (currentUserId) {
+        const { data: profile } = await (supabase as any)
+          .from("profiles")
+          .select("plan,plan_expires_at")
+          .eq("user_id", currentUserId)
+          .maybeSingle();
+        subscribed = hasActiveSubscription(profile);
+        setIsSubscribed(subscribed);
+      }
+
+      if (v?.ads_enabled && !subscribed) {
+        const { data: ads } = await supabase
+          .from("ads")
+          .select("position,ad_code,popunder_url,once_per_user,is_active")
+          .in("position", ["mid", "popunder"]);
+        setPlayerAds(ads ?? []);
+      }
       setVideo(v);
       if (v) {
         incView({ data: { videoId: id } }).catch(() => {});
@@ -98,11 +150,30 @@ function VideoPage() {
   const handlePlay = () => {
     if (restricted) { setShowRestricted(true); return; }
     if (!video) return;
-    const key = "popunder_shown";
-    if (!localStorage.getItem(key) && video.popunder_url) {
-      window.open(video.popunder_url, "_blank");
-      localStorage.setItem(key, "1");
+    const shouldShowAds = video.ads_enabled && !isSubscribed;
+    const viewerKey = userId ?? "guest";
+    const playerAdKey = `player_ad_shown:${viewerKey}:${id}`;
+
+    if (shouldShowAds && !localStorage.getItem(playerAdKey)) {
+      const playerAd = playerAds.find(a => a.position === "mid" && a.ad_code) ?? playerAds.find(a => a.ad_code);
+      if (playerAd) {
+        localStorage.setItem(playerAdKey, "1");
+        setActivePlayerAd(playerAd);
+        setShowAdGate(true);
+        return;
+      }
+
+      const popunderUrl = playerAds.find(a => a.position === "popunder")?.popunder_url ?? video.popunder_url;
+      if (popunderUrl) {
+        localStorage.setItem(playerAdKey, "1");
+        window.open(popunderUrl, "_blank");
+      }
     }
+    setShowPlayer(true);
+  };
+
+  const continueToVideo = () => {
+    setShowAdGate(false);
     setShowPlayer(true);
   };
 
@@ -161,7 +232,17 @@ function VideoPage() {
           <div>
             {/* Player */}
             <div className="relative bg-black rounded-xl overflow-hidden aspect-video border border-border">
-              {!showPlayer ? (
+              {!showPlayer ? showAdGate ? (
+                <div className="absolute inset-0 flex flex-col bg-card">
+                  <div className="min-h-0 flex-1 p-3">
+                    <PlayerAdFrame adCode={activePlayerAd?.ad_code} />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3">
+                    <span className="text-sm font-medium text-muted-foreground">Advertisement</span>
+                    <Button size="sm" onClick={continueToVideo}>Continue to video</Button>
+                  </div>
+                </div>
+              ) : (
                 <button onClick={handlePlay} className="absolute inset-0 group">
                   <img src={video.thumbnail_url} alt={video.title} className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40" />
